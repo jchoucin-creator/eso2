@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="ca">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ordena les veus</title>
+<style>
+:root{
+  --teal:#0e7c70; --teal-2:#0b5f56; --gold:#c2962f;
+  --bg:#f3f7f6; --bg-glow:#dcefeb; --surface:#ffffff; --surface-2:#eaf2f0;
+  --ink:#16302c; --muted:#4f6a65; --line:#c9dbd7;
+  --ok:#1f7a3a; --ok-bg:#e3f3e7; --ko:#b0342b; --ko-bg:#fbe7e5;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0c1a18; --bg-glow:#123a34; --surface:#132623; --surface-2:#1a332f;
+    --ink:#e6f1ef; --muted:#9fbbb5; --line:#2a4a45; --teal:#2bb3a2; --teal-2:#1f8f81; --gold:#d9ae4a;
+    --ok:#6fd08a; --ok-bg:#153a22; --ko:#f08a80; --ko-bg:#3d1b18; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0c1a18; --bg-glow:#123a34; --surface:#132623; --surface-2:#1a332f;
+  --ink:#e6f1ef; --muted:#9fbbb5; --line:#2a4a45; --teal:#2bb3a2; --teal-2:#1f8f81; --gold:#d9ae4a;
+  --ok:#6fd08a; --ok-bg:#153a22; --ko:#f08a80; --ko-bg:#3d1b18; color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  font-family:"Trebuchet MS","Segoe UI",system-ui,sans-serif; color:var(--ink);
+  background:radial-gradient(1100px 600px at 15% -10%,var(--bg-glow),transparent 60%),
+             radial-gradient(900px 500px at 110% 110%,var(--bg-glow),transparent 60%),var(--bg);
+  min-height:100vh; padding-inline:16px; padding-block:20px 40px;
+}
+.wrap{max-width:860px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+header{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap}
+h1{margin:0;font-size:clamp(1.7rem,4vw,2.4rem);color:var(--teal);text-wrap:balance}
+.sub{margin:4px 0 0;color:var(--muted);max-width:60ch;line-height:1.45}
+button{font:inherit;cursor:pointer}
+button:focus-visible,a:focus-visible,summary:focus-visible,input:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.ghost{background:transparent;border:1px solid var(--line);color:var(--ink);border-radius:999px;padding:6px 14px}
+.board{display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:stretch}
+.scale{display:flex;flex-direction:column;justify-content:space-between;align-items:center;width:64px;
+  font-weight:bold;font-size:.8rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);text-align:center}
+.scale .bar{flex:1;width:10px;border-radius:5px;margin:8px 0;background:linear-gradient(var(--gold),var(--teal-2))}
+#list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:12px}
+.card{display:flex;align-items:center;gap:12px;background:var(--surface);border:2px solid var(--line);
+  border-radius:14px;padding:12px 14px;touch-action:none;user-select:none}
+.card.ghosting{opacity:.4}
+.card.ok{border-color:var(--ok);background:var(--ok-bg)}
+.card.ko{border-color:var(--ko);background:var(--ko-bg)}
+.pos{font-variant-numeric:tabular-nums;color:var(--muted);font-weight:bold;width:1.4em;text-align:center}
+.grip{cursor:grab;color:var(--muted);font-size:1.3rem;line-height:1;padding:4px}
+.letter{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;font-size:1.5rem;font-weight:bold;
+  color:#fff;background:var(--teal);flex:none}
+.play{display:flex;align-items:center;gap:8px;border:none;border-radius:999px;padding:10px 16px;background:var(--surface-2);color:var(--ink);font-weight:bold}
+.play[aria-pressed="true"]{background:var(--gold);color:#1b1405}
+.eq{display:inline-flex;gap:2px;height:14px;align-items:flex-end}
+.eq i{width:3px;height:30%;background:currentColor;border-radius:1px}
+.play[aria-pressed="true"] .eq i{animation:eq .8s infinite ease-in-out}
+.eq i:nth-child(2){animation-delay:.2s!important}.eq i:nth-child(3){animation-delay:.4s!important}
+@keyframes eq{0%,100%{height:25%}50%{height:100%}}
+.info{flex:1;min-width:0;line-height:1.35}
+.info b{display:block}
+.info small{color:var(--muted)}
+.moves{display:flex;flex-direction:column;gap:4px}
+.moves button{border:1px solid var(--line);background:transparent;color:var(--ink);border-radius:8px;width:34px;height:28px}
+.actions{display:flex;gap:10px;flex-wrap:wrap}
+.primary{background:var(--teal);color:#fff;border:none;border-radius:999px;padding:12px 22px;font-weight:bold;font-size:1.05rem}
+.secondary{background:transparent;color:var(--teal);border:2px solid var(--teal);border-radius:999px;padding:10px 20px;font-weight:bold}
+#result{font-size:1.15rem;font-weight:bold;min-height:1.5em;margin:0}
+.player-box{display:flex;gap:14px;align-items:center;flex-wrap:wrap;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px}
+.speaker{width:96px;height:96px;border-radius:50%;flex:none;display:grid;place-items:center;color:#fff;font-size:2.4rem;
+  background:radial-gradient(circle at 50% 40%,var(--teal),var(--teal-2));box-shadow:0 0 0 0 var(--gold);transition:box-shadow .3s}
+.speaker.on{animation:pulse 1.2s infinite ease-out}
+@keyframes pulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--gold) 70%,transparent)}100%{box-shadow:0 0 0 18px transparent}}
+@media (prefers-reduced-motion:reduce){.speaker.on{animation:none;box-shadow:0 0 0 4px var(--gold)}}
+.now{display:flex;flex-direction:column;align-items:flex-start;gap:8px;flex:1;min-width:220px}
+.now a{font-weight:bold}
+.player-box p{margin:0;color:var(--muted);max-width:44ch;line-height:1.45;font-size:.95rem}
+.player-box a{color:var(--teal)}
+details{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 16px}
+summary{font-weight:bold;cursor:pointer;color:var(--muted)}
+.cfg{display:grid;gap:10px;margin-top:12px}
+.cfg-row{display:grid;padding-bottom:10px;border-bottom:1px solid var(--line);grid-template-columns:90px 1fr 80px 80px;gap:8px;align-items:center}
+.cfg-row input{width:100%;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--surface-2);color:var(--ink);font:inherit;font-size:.9rem}
+.pick{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:.9rem;color:var(--muted)}
+.pick label{cursor:pointer;font-size:.9rem}
+code{font-size:.9em}
+.cfg-head{font-size:.75rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+@media (max-width:560px){
+  .board{grid-template-columns:1fr}.scale{flex-direction:row;width:auto}.scale .bar{height:10px;width:auto;flex:1;margin:0 8px;background:linear-gradient(90deg,var(--gold),var(--teal-2))}
+  .cfg-row{grid-template-columns:1fr 1fr}.cfg-head{display:none}
+  .card{flex-wrap:wrap}.info{flex-basis:100%}
+}
+@media (prefers-reduced-motion:reduce){.play[aria-pressed="true"] .eq i{animation:none;height:70%}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Ordena les veus</h1>
+      <p class="sub">Escolta les quatre veus. Arrossega-les o fes servir les fletxes per ordenar-les de la més aguda a la més greu. Quan ho tinguis, prem <b>Comprova</b>.</p>
+    </div>
+    <button class="ghost" id="theme" type="button">◐ Tema</button>
+  </header>
+
+  <div class="player-box">
+    <div class="speaker" id="speaker" aria-hidden="true">♪</div>
+    <div class="now">
+      <p id="msg" role="status" aria-live="polite">Prem «Escolta» en una targeta per sentir un fragment. Només hi ha so: compten les orelles.</p>
+    </div>
+  </div>
+
+  <div class="board">
+    <div class="scale" aria-hidden="true"><span>Més aguda</span><div class="bar"></div><span>Més greu</span></div>
+    <ol id="list" aria-label="Ordre de les veus, de la més aguda a la més greu"></ol>
+  </div>
+
+  <div class="actions">
+    <button class="primary" id="check" type="button">Comprova</button>
+    <button class="secondary" id="shuffle" type="button">Barreja de nou</button>
+  </div>
+  <p id="result" role="status" aria-live="polite"></p>
+
+  <details>
+    <summary>Configuració (docent)</summary>
+    <p class="sub" style="font-size:.9rem">Cada veu sona des d'un fitxer MP3. Posa'ls a la carpeta <code>audio/</code> al costat d'aquest fitxer (soprano.mp3, contralt.mp3, tenor.mp3, baix.mp3) o tria'ls des de l'ordinador. Indica el segon on comença el fragment i quants segons dura. Els canvis es guarden en aquest navegador.</p>
+    <div class="cfg" id="cfg">
+      <div class="cfg-row cfg-head"><span>Veu</span><span>Fitxer MP3</span><span>Inici (s)</span><span>Durada (s)</span></div>
+    </div>
+    <div class="actions" style="margin-top:12px"><button class="ghost" id="reset" type="button">Restaura els valors inicials</button></div>
+  </details>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
+<script>
+const CORRECT = ["soprano","contralt","tenor","baix"];
+const DEFAULTS = {
+  soprano:{nom:"Soprano",  tipus:"Veu femenina · clau de sol", obra:"Mozart, La flauta màgica: «Der Hölle Rache» · Diana Damrau", file:"audio/soprano.mp3", start:0, dur:20},
+  contralt:{nom:"Contralt", tipus:"Veu femenina · clau de sol", obra:"Fragment triat pel docent", file:"audio/contralt.mp3", start:18, dur:20},
+  tenor:{nom:"Tenor",      tipus:"Veu masculina · clau de sol en octava baixa", obra:"Puccini, Turandot: «Nessun dorma» · Luciano Pavarotti", file:"audio/tenor.mp3", start:16, dur:20},
+  baix:{nom:"Baix",        tipus:"Veu masculina · clau de fa", obra:"Mozart, La flauta màgica: «In diesen heil'gen Hallen» · Kurt Moll", file:"audio/baix.mp3", start:9, dur:20}
+};
+const KEY = "ordena-veus-cfg-mp3";
+let cfg = load();
+function load(){
+  try{ const s = JSON.parse(localStorage.getItem(KEY)||"null"); if(s) return Object.fromEntries(CORRECT.map(k=>[k,{...DEFAULTS[k],...s[k]}])); }catch(e){}
+  return JSON.parse(JSON.stringify(DEFAULTS));
+}
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(cfg)); }catch(e){} }
+
+const list = document.getElementById("list");
+const result = document.getElementById("result");
+let letters = {}; // voice -> letter
+
+function shuffle(){
+  let order;
+  do{ order = [...CORRECT].sort(()=>Math.random()-.5); } while(order.join()===CORRECT.join());
+  const L = ["A","B","C","D"];
+  letters = {}; order.forEach((v,i)=>letters[v]=L[i]);
+  list.innerHTML = "";
+  order.forEach(v=>{
+    const li = document.createElement("li");
+    li.className = "card"; li.dataset.voice = v;
+    li.innerHTML = `<span class="pos"></span><span class="grip" aria-hidden="true">⠿</span>
+      <span class="letter">${letters[v]}</span>
+      <button class="play" type="button" aria-pressed="false" aria-label="Escolta la veu ${letters[v]}"><span class="eq"><i></i><i></i><i></i></span><span class="lbl">Escolta</span></button>
+      <span class="info"><b>Veu ${letters[v]}</b><small>?</small></span>
+      <span class="moves"><button type="button" data-d="-1" aria-label="Puja la veu ${letters[v]}">▲</button><button type="button" data-d="1" aria-label="Baixa la veu ${letters[v]}">▼</button></span>`;
+    list.appendChild(li);
+  });
+  result.textContent = ""; renumber(); stop();
+}
+function renumber(){ [...list.children].forEach((li,i)=>{ li.querySelector(".pos").textContent = i+1; li.classList.remove("ok","ko"); }); }
+
+list.addEventListener("click", e=>{
+  const li = e.target.closest(".card"); if(!li) return;
+  const mv = e.target.closest(".moves button");
+  if(mv){
+    const d = +mv.dataset.d;
+    if(d<0 && li.previousElementSibling) list.insertBefore(li, li.previousElementSibling);
+    if(d>0 && li.nextElementSibling) list.insertBefore(li.nextElementSibling, li);
+    renumber(); mv.focus(); return;
+  }
+  const pb = e.target.closest(".play");
+  if(pb){ pb.getAttribute("aria-pressed")==="true" ? stop() : play(li.dataset.voice, pb); }
+});
+if(window.Sortable){ Sortable.create(list,{animation:180, ghostClass:"ghosting", handle:".card", filter:"button", preventOnFilter:false, onEnd:renumber}); }
+
+document.getElementById("check").addEventListener("click", ()=>{
+  const cur = [...list.children];
+  let hits = 0;
+  cur.forEach((li,i)=>{
+    const v = li.dataset.voice, ok = v===CORRECT[i]; if(ok) hits++;
+    li.classList.add(ok?"ok":"ko");
+    li.querySelector(".info").innerHTML = `<b>Veu ${letters[v]}: ${cfg[v].nom}</b><small>${cfg[v].tipus}<br>${cfg[v].obra}</small>`;
+  });
+  result.textContent = hits===4 ? "Perfecte! Soprano, contralt, tenor i baix: de la més aguda a la més greu."
+    : `Has encertat ${hits} de 4 posicions. Torna a escoltar les veus marcades en vermell.`;
+  result.style.color = hits===4 ? "var(--ok)" : "var(--ink)";
+});
+document.getElementById("shuffle").addEventListener("click", shuffle);
+
+/* ---------- Reproductor MP3 ---------- */
+const msg = document.getElementById("msg"), speaker = document.getElementById("speaker");
+const audio = new Audio(); audio.preload = "auto";
+let local = {};            // veu -> {name, url}  (MP3 triat des de l'ordinador)
+let timer=null, fade=null, activeBtn=null, activeVoice=null;
+
+function say(text){ msg.textContent = text; }
+function srcFor(v){ return local[v] ? local[v].url : cfg[v].file; }
+
+function play(v, btn){
+  stop();
+  const c = cfg[v], st = Math.max(0, +c.start||0), du = Math.max(3, +c.dur||20);
+  activeBtn = btn; activeVoice = v;
+  btn.setAttribute("aria-pressed","true"); btn.querySelector(".lbl").textContent = "Atura";
+  say(`Carregant la veu ${letters[v]}…`);
+  audio.volume = 1;
+  const begin = ()=>{
+    audio.removeEventListener("loadedmetadata", begin);
+    if(activeVoice!==v) return;
+    try{ audio.currentTime = Math.min(st, Math.max(0,(audio.duration||st)-1)); }catch(e){}
+    audio.play().then(()=>{
+      speaker.classList.add("on"); say(`Sona la veu ${letters[v]}.`);
+      timer = setTimeout(fadeOut, Math.max(0, du-1.5)*1000);
+    }).catch(()=>{ if(activeVoice===v){ stop(); say("El navegador no ha deixat arrencar el so. Torna a prémer «Escolta»."); } });
+  };
+  audio.addEventListener("loadedmetadata", begin);
+  audio.src = srcFor(v);
+  audio.load();
+}
+function fadeOut(){
+  clearInterval(fade);
+  fade = setInterval(()=>{ audio.volume = Math.max(0, audio.volume-0.1); if(audio.volume<=0.01) stop(); }, 150);
+}
+function stop(){
+  clearTimeout(timer); clearInterval(fade);
+  try{ audio.pause(); }catch(e){}
+  audio.volume = 1;
+  speaker.classList.remove("on");
+  if(activeBtn){ activeBtn.setAttribute("aria-pressed","false"); activeBtn.querySelector(".lbl").textContent="Escolta"; }
+  activeBtn=null; activeVoice=null;
+}
+audio.addEventListener("ended", stop);
+audio.addEventListener("error", ()=>{
+  const v = activeVoice; if(!v) return; stop();
+  say(`No trobo l'àudio de la veu ${letters[v]} (${local[v] ? local[v].name : cfg[v].file}). Revisa la configuració del docent.`);
+});
+
+/* MP3 triats des de l'ordinador: es guarden en aquest navegador (IndexedDB) */
+const DB = { db:null,
+  open(){ return new Promise(res=>{ try{ const r = indexedDB.open("ordena-veus",1);
+    r.onupgradeneeded = ()=>r.result.createObjectStore("mp3");
+    r.onsuccess = ()=>{ this.db=r.result; res(); }; r.onerror = ()=>res(); }catch(e){ res(); } }); },
+  tx(mode){ return this.db.transaction("mp3",mode).objectStore("mp3"); },
+  put(k,val){ try{ if(this.db) this.tx("readwrite").put(val,k); }catch(e){} },
+  del(k){ try{ if(this.db) this.tx("readwrite").delete(k); }catch(e){} },
+  all(){ return new Promise(res=>{ if(!this.db) return res({}); const out={}; try{
+    const c = this.tx("readonly").openCursor();
+    c.onsuccess = e=>{ const cur=e.target.result; if(cur){ out[cur.key]=cur.value; cur.continue(); } else res(out); };
+    c.onerror = ()=>res(out); }catch(e){ res(out); } }); }
+};
+function setLocal(v, name, blob){
+  if(local[v]) URL.revokeObjectURL(local[v].url);
+  local[v] = {name, url:URL.createObjectURL(blob)};
+}
+
+/* ---------- Configuració ---------- */
+const cfgBox = document.getElementById("cfg");
+const esc = t=>String(t).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;");
+function drawCfg(){
+  cfgBox.querySelectorAll(".cfg-row:not(.cfg-head)").forEach(r=>r.remove());
+  CORRECT.forEach(k=>{
+    const n = DEFAULTS[k].nom, row = document.createElement("div"); row.className="cfg-row";
+    row.innerHTML = `<b>${n}</b>
+      <input id="f-${k}" aria-label="Fitxer MP3 ${n}" value="${esc(cfg[k].file)}">
+      <input id="s-${k}" aria-label="Inici ${n}" type="number" min="0" value="${cfg[k].start}">
+      <input id="d-${k}" aria-label="Durada ${n}" type="number" min="3" max="120" value="${cfg[k].dur}">
+      <span class="pick" style="grid-column:2 / -1">
+        <label class="ghost" for="p-${k}">Tria MP3 de l'ordinador</label>
+        <input id="p-${k}" type="file" accept="audio/*,.mp3" hidden>
+        <span>${local[k] ? "Fa servir: <b>"+esc(local[k].name)+"</b> (de l'ordinador)" : "Fa servir: "+esc(cfg[k].file)}</span>
+        ${local[k] ? `<button class="ghost" type="button" data-clear="${k}">Treu-lo</button>` : ""}
+      </span>
+      <input id="o-${k}" aria-label="Obra i intèrpret ${n}" placeholder="Obra i intèrpret (es mostra en comprovar)" style="grid-column:2 / -1" value="${esc(cfg[k].obra)}">`;
+    cfgBox.appendChild(row);
+  });
+}
+cfgBox.addEventListener("change", e=>{
+  const [f,k] = e.target.id.split("-"); if(!cfg[k]) return;
+  if(f==="p"){
+    const file = e.target.files[0]; if(!file) return;
+    setLocal(k, file.name, file); DB.put(k, {name:file.name, blob:file}); drawCfg();
+    say(`Veu ${DEFAULTS[k].nom}: s'ha carregat «${file.name}».`); return;
+  }
+  const field = {f:"file",s:"start",d:"dur",o:"obra"}[f];
+  cfg[k][field] = (f==="f"||f==="o") ? e.target.value.trim() : +e.target.value; save();
+  if(f==="f") drawCfg();
+});
+cfgBox.addEventListener("click", e=>{
+  const k = e.target.dataset && e.target.dataset.clear; if(!k) return;
+  URL.revokeObjectURL(local[k].url); delete local[k]; DB.del(k); drawCfg();
+});
+document.getElementById("reset").addEventListener("click", ()=>{
+  cfg = JSON.parse(JSON.stringify(DEFAULTS)); save();
+  Object.keys(local).forEach(k=>{ URL.revokeObjectURL(local[k].url); DB.del(k); }); local = {}; drawCfg();
+});
+
+/* ---------- Tema ---------- */
+document.getElementById("theme").addEventListener("click", ()=>{
+  const r = document.documentElement, cur = r.dataset.theme || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark":"light");
+  r.dataset.theme = cur==="dark" ? "light" : "dark";
+});
+
+drawCfg(); shuffle();
+DB.open().then(()=>DB.all()).then(saved=>{ Object.entries(saved).forEach(([k,v])=>{ if(cfg[k] && v && v.blob) setLocal(k, v.name, v.blob); }); drawCfg(); });
+</script>
+</body>
+</html>
